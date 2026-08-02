@@ -38,6 +38,7 @@
     background: hsl(var(--background));
     scroll-behavior: smooth;
     scroll-padding-top: var(--navbar-height);
+    overflow-x: hidden;
   }
 
   body {
@@ -61,7 +62,8 @@
 @layer utilities {
   .section-viewport {
     width: 100vw;
-    height: 100vh;
+    min-height: calc(100vh - var(--navbar-height));
+    height: auto;
     scroll-margin-top: var(--navbar-height);
   }
 
@@ -71,6 +73,11 @@
   }
 
   @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .section-viewport {
+      width: 100vw;
+      height: 100vh;
+    }
+
     .horizontal-scroll {
       overflow: hidden;
     }

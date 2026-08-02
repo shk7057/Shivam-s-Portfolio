@@ -80,7 +80,7 @@ export function HomeSection() {
       </div>
 
       {/* Main Grid Content */}
-      <div className="relative z-10 flex h-full w-full flex-col justify-between px-6 py-8 sm:px-10 sm:py-12 md:px-12 md:py-14 lg:px-16 xl:px-24">
+      <div className="relative z-10 flex h-full w-full max-w-[1800px] mx-auto flex-col justify-between px-6 py-8 sm:px-10 sm:py-12 md:px-12 md:py-14 lg:px-16 xl:px-24">
         {/* Top / Center Section Grid */}
         <div className="grid min-h-0 flex-1 grid-cols-1 items-center gap-8 md:grid-cols-[1.1fr_minmax(18rem,32rem)_1fr] lg:grid-cols-[1.2fr_minmax(24rem,38rem)_1fr] xl:grid-cols-[1.2fr_minmax(28rem,44rem)_1fr]">
           
