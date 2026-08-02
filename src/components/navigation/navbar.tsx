@@ -20,25 +20,24 @@ export function Navbar() {
     };
 
     const handleScroll = () => {
-      const sections = siteNavigation.map((item) => item.id);
       const isDesktopHorizontal =
         window.innerWidth >= 768 &&
         !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
       if (isDesktopHorizontal) {
-        const track = document.querySelector(".horizontal-scroll-track");
-        if (track) {
-          const sectionCount = track.children.length;
-          const totalDistance = (sectionCount - 1) * window.innerWidth;
-          const currentScroll = window.scrollY;
-          const progress = Math.min(1, Math.max(0, currentScroll / (totalDistance || 1)));
-          const activeIdx = Math.min(sectionCount - 1, Math.floor(progress * sectionCount + 0.3));
-          const activeSecId = track.children[activeIdx]?.id;
-          if (activeSecId) {
-            setActiveSection(activeSecId);
+        const sectionEls = siteNavigation
+          .map((item) => document.getElementById(item.id))
+          .filter(Boolean) as HTMLElement[];
+
+        const currentScroll = window.scrollY;
+        for (let i = sectionEls.length - 1; i >= 0; i--) {
+          if (sectionEls[i].offsetLeft - 200 <= currentScroll) {
+            setActiveSection(sectionEls[i].id);
+            break;
           }
         }
       } else {
+        const sections = siteNavigation.map((item) => item.id);
         const scrollPosition = window.scrollY + 120;
         for (let i = sections.length - 1; i >= 0; i--) {
           const sectionEl = document.getElementById(sections[i]);
@@ -84,18 +83,11 @@ export function Navbar() {
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (isDesktopHorizontal) {
-      const track = document.querySelector(".horizontal-scroll-track");
-      if (track) {
-        const sections = Array.from(track.children);
-        const index = sections.findIndex((sec) => sec.id === id);
-        if (index !== -1) {
-          const targetScroll = index * window.innerWidth;
-          window.scrollTo({
-            top: targetScroll,
-            behavior: "smooth",
-          });
-        }
-      }
+      const targetScroll = element.offsetLeft;
+      window.scrollTo({
+        top: targetScroll,
+        behavior: "smooth",
+      });
     } else {
       const navbarHeight = 82;
       const elementPosition =
@@ -129,7 +121,7 @@ export function Navbar() {
             className="group inline-flex items-center gap-0.5 text-2xl font-serif font-medium tracking-tight text-[#F5F3EF] transition-all duration-300 hover:scale-[1.02] hover:drop-shadow-[0_0_12px_rgba(199,166,107,0.35)]"
             aria-label="Shivam Portfolio Home"
           >
-            <span>SHK7057</span>
+            <span>Shivam</span>
             <span className="font-sans font-bold text-primary">.</span>
           </Link>
 
@@ -148,7 +140,7 @@ export function Navbar() {
                   className={cn(
                     "group relative py-1 text-[11px] font-medium tracking-[0.2em] uppercase transition-colors duration-250",
                     isActive
-                      ? "text-primary font-semibold"
+                      ? "font-semibold text-primary"
                       : "text-muted-foreground/75 hover:text-foreground",
                   )}
                 >
@@ -171,7 +163,7 @@ export function Navbar() {
               href="/resume.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="group hidden items-center gap-2 rounded-full border border-primary/35 bg-background/40 px-5 py-2 text-xs font-medium tracking-widest text-foreground uppercase transition-all duration-300 hover:scale-[1.03] hover:border-primary/80 hover:bg-primary/10 hover:shadow-[0_0_20px_rgba(199,166,107,0.25)] active:scale-[0.98] sm:inline-flex"
+              className="group hidden items-center gap-2 rounded-full border border-primary/35 bg-background/40 px-5 py-2 text-xs font-medium tracking-widest uppercase text-foreground transition-all duration-300 hover:scale-[1.03] hover:border-primary/80 hover:bg-primary/10 hover:shadow-[0_0_20px_rgba(199,166,107,0.25)] active:scale-[0.98] sm:inline-flex"
             >
               <span>Resume</span>
               <ArrowUpRight className="size-3.5 text-primary transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -210,7 +202,7 @@ export function Navbar() {
               <Link
                 href="#home"
                 onClick={(e) => handleNavClick(e, "home")}
-                className="text-2xl font-serif font-medium tracking-tight text-[#F5F3EF]"
+                className="font-serif text-2xl font-medium tracking-tight text-[#F5F3EF]"
               >
                 Shivam<span className="font-sans font-bold text-primary">.</span>
               </Link>
@@ -257,7 +249,7 @@ export function Navbar() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
-                className="group flex w-full items-center justify-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-6 py-3.5 text-xs font-medium tracking-widest text-foreground uppercase shadow-[0_0_20px_rgba(199,166,107,0.2)] transition-all hover:bg-primary/20"
+                className="group flex w-full items-center justify-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-6 py-3.5 text-xs font-medium tracking-widest uppercase text-foreground shadow-[0_0_20px_rgba(199,166,107,0.2)] transition-all hover:bg-primary/20"
               >
                 <span>Resume</span>
                 <ArrowUpRight className="size-4 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
