@@ -38,18 +38,18 @@ export function HeroParticles({ className, count = 18 }: HeroParticlesProps) {
     let height = (canvas.height = canvas.parentElement?.offsetHeight || window.innerHeight);
 
     const colors = [
-      "rgba(199, 166, 107,", // Warm Gold
-      "rgba(245, 243, 239,", // Soft Off-White
+      "rgba(199, 166, 107,",
+      "rgba(245, 243, 239,",
     ];
 
     const particles: Particle[] = Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      radius: Math.random() * 0.9 + 0.7, // 0.7px - 1.6px
+      radius: Math.random() * 0.9 + 0.7,
       color: colors[Math.floor(Math.random() * colors.length)],
       alpha: Math.random() * 0.35 + 0.1,
       targetAlpha: Math.random() * 0.35 + 0.1,
-      vy: -(Math.random() * 0.25 + 0.1), // Slow upward drift
+      vy: -(Math.random() * 0.25 + 0.1),
       vx: (Math.random() - 0.5) * 0.15,
       pulseSpeed: Math.random() * 0.015 + 0.005,
     }));
@@ -65,17 +65,16 @@ export function HeroParticles({ className, count = 18 }: HeroParticlesProps) {
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      particles.forEach((p) => {
+      for (let i = 0; i < count; i++) {
+        const p = particles[i];
         p.x += p.vx;
         p.y += p.vy;
 
-        // Smooth opacity pulse
         p.alpha += (p.targetAlpha - p.alpha) * p.pulseSpeed;
         if (Math.abs(p.targetAlpha - p.alpha) < 0.02) {
           p.targetAlpha = Math.random() * 0.4 + 0.1;
         }
 
-        // Screen wrap
         if (p.y < -10) p.y = height + 10;
         if (p.x < -10) p.x = width + 10;
         if (p.x > width + 10) p.x = -10;
@@ -83,10 +82,8 @@ export function HeroParticles({ className, count = 18 }: HeroParticlesProps) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = `${p.color} ${p.alpha.toFixed(3)})`;
-        ctx.shadowBlur = 4;
-        ctx.shadowColor = "rgba(199, 166, 107, 0.3)";
         ctx.fill();
-      });
+      }
 
       animId = requestAnimationFrame(render);
     };
@@ -114,7 +111,7 @@ export function HeroParticles({ className, count = 18 }: HeroParticlesProps) {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className={cn("pointer-events-none absolute inset-0 z-[2] select-none", className)}
+      className={cn("pointer-events-none absolute inset-0 z-[2] select-none transform-gpu", className)}
     />
   );
 }

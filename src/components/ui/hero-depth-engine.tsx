@@ -139,11 +139,11 @@ export function HeroDepthEngine({
 
         {/* Ambient Gold Rim Glow behind Subject */}
         <div
-          className="absolute inset-[0%] rounded-full opacity-25 blur-xl pointer-events-none bg-[radial-gradient(circle_at_50%_40%,rgba(199,166,107,0.18)_0%,transparent_70%)]"
+          className="absolute inset-[0%] rounded-full opacity-20 blur-xl pointer-events-none bg-[radial-gradient(circle_at_50%_40%,rgba(199,166,107,0.18)_0%,transparent_70%)]"
           style={{ transform: "translateZ(-15px)" }}
         />
 
-        {/* Main Sharp PNG Subject */}
+        {/* Main Sharp PNG Subject with Soft Drop Shadow */}
         <div className="relative w-full h-full" style={{ transform: "translateZ(0px)" }}>
           <Image
             src={src}
@@ -151,7 +151,7 @@ export function HeroDepthEngine({
             fill
             priority={priority}
             sizes={sizes}
-            className="object-cover object-center pointer-events-none"
+            className="object-cover object-center pointer-events-none filter drop-shadow-[0_20px_35px_rgba(0,0,0,0.65)]"
           />
         </div>
       </div>

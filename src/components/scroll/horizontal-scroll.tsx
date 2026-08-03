@@ -2,6 +2,7 @@
 
 import {
   Children,
+  Fragment,
   type ReactNode,
   useEffect,
   useRef,
@@ -73,7 +74,6 @@ export function HorizontalScroll({ children, className }: HorizontalScrollProps)
       return;
     }
 
-    // Scroll distance equals full horizontal scrollWidth minus viewport width
     const getScrollDistance = () =>
       Math.max(0, track.scrollWidth - window.innerWidth);
 
@@ -93,8 +93,9 @@ export function HorizontalScroll({ children, className }: HorizontalScrollProps)
       },
     });
 
-    // Camera Feel: Section entry scale (0.985 -> 1.00), opacity (0.85 -> 1.00), and subtle translate (80px -> 0px)
     const sections = Array.from(track.querySelectorAll<HTMLElement>("section"));
+
+    // 1. Camera Feel: Section entry scale (0.985 -> 1.00), opacity (0.85 -> 1.00), and translate (80px -> 0px)
     sections.forEach((sec, idx) => {
       if (idx === 0) return; // Hero starts at 1.00
 
@@ -119,6 +120,37 @@ export function HorizontalScroll({ children, className }: HorizontalScrollProps)
           },
         },
       );
+    });
+
+    // 2. Tall Section Vertical Scrub: If a non-hero section's content height exceeds the viewport,
+    // smoothly translate its inner container vertically as horizontal scroll progresses.
+    sections.forEach((sec) => {
+      if (sec.id === "home") return;
+
+      const inner = sec.querySelector<HTMLElement>(".relative.z-10");
+      if (!inner) return;
+
+      const availableHeight = window.innerHeight - 90;
+      const contentHeight = inner.scrollHeight;
+      const excessY = contentHeight - availableHeight;
+
+      if (excessY > 20) {
+        gsap.fromTo(
+          inner,
+          { y: 0 },
+          {
+            y: -excessY,
+            ease: "none",
+            scrollTrigger: {
+              trigger: sec,
+              containerAnimation: horizontalTween,
+              start: "left 5%",
+              end: "right 95%",
+              scrub: 1.1,
+            },
+          },
+        );
+      }
     });
 
     let resizeFrame: number | null = null;
@@ -148,7 +180,11 @@ export function HorizontalScroll({ children, className }: HorizontalScrollProps)
       horizontalTween.scrollTrigger?.kill();
       horizontalTween.kill();
       gsap.set(track, { clearProps: "transform" });
-      sections.forEach((sec) => gsap.set(sec, { clearProps: "transform,opacity" }));
+      sections.forEach((sec) => {
+        gsap.set(sec, { clearProps: "transform,opacity" });
+        const inner = sec.querySelector<HTMLElement>(".relative.z-10");
+        if (inner) gsap.set(inner, { clearProps: "transform" });
+      });
       ScrollTrigger.refresh();
     };
   }, [cleanupScrollTriggers, gsap, isHorizontalEnabled, ScrollTrigger]);
@@ -160,11 +196,11 @@ export function HorizontalScroll({ children, className }: HorizontalScrollProps)
       ref={containerRef}
       className={cn("horizontal-scroll relative w-full", className)}
     >
-      <div ref={trackRef} className="horizontal-scroll-track flex flex-col md:flex-row">
+      <div ref={trackRef} className="horizontal-scroll-track flex flex-col md:flex-row transform-gpu">
         {childrenArray.map((child, idx) => {
           const corridorMeta = CORRIDOR_METADATA[idx];
           return (
-            <div key={idx} className="contents">
+            <Fragment key={idx}>
               {child}
               {isHorizontalEnabled && corridorMeta && (
                 <GalleryCorridorGap
@@ -172,7 +208,7 @@ export function HorizontalScroll({ children, className }: HorizontalScrollProps)
                   label={corridorMeta.label}
                 />
               )}
-            </div>
+            </Fragment>
           );
         })}
       </div>

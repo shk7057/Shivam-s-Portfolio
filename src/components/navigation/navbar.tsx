@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 
@@ -10,52 +10,95 @@ import { cn } from "@/lib/utils";
 export function Navbar() {
   const [activeSection, setActiveSection] = useState("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+
+  const lastScrollY = useRef(0);
+  const mouseNearTop = useRef(false);
+  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace("#", "");
-      if (hash) {
-        setActiveSection(hash);
+      if (hash && siteNavigation.some((item) => item.id === hash)) {
+        setActiveSection((prev) => (prev === hash ? prev : hash));
+      }
+    };
+
+    let rAfId: number | null = null;
+
+    const updateActiveSection = () => {
+      const isDesktop =
+        window.innerWidth >= 768 &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      const viewportCenterX = window.innerWidth / 2;
+      const viewportCenterY = window.innerHeight / 2;
+
+      for (let i = siteNavigation.length - 1; i >= 0; i--) {
+        const id = siteNavigation[i].id;
+        const el = document.getElementById(id);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (isDesktop) {
+            if (rect.left <= viewportCenterX + 120 && rect.right >= viewportCenterX - 120) {
+              setActiveSection((prev) => (prev === id ? prev : id));
+              break;
+            }
+          } else {
+            if (rect.top <= viewportCenterY + 120) {
+              setActiveSection((prev) => (prev === id ? prev : id));
+              break;
+            }
+          }
+        }
       }
     };
 
     const handleScroll = () => {
-      const isDesktopHorizontal =
-        window.innerWidth >= 768 &&
-        !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (rAfId !== null) cancelAnimationFrame(rAfId);
+      rAfId = requestAnimationFrame(updateActiveSection);
 
-      if (isDesktopHorizontal) {
-        const sectionEls = siteNavigation
-          .map((item) => document.getElementById(item.id))
-          .filter(Boolean) as HTMLElement[];
+      const currentScrollY = window.scrollY;
 
-        const currentScroll = window.scrollY;
-        for (let i = sectionEls.length - 1; i >= 0; i--) {
-          if (sectionEls[i].offsetLeft - 200 <= currentScroll) {
-            setActiveSection(sectionEls[i].id);
-            break;
-          }
-        }
+      if (currentScrollY < lastScrollY.current || currentScrollY < 50) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY.current + 10 && !mouseNearTop.current) {
+        setIsVisible(false);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const isDesktop = window.innerWidth >= 768;
+      if (!isDesktop) return;
+
+      if (e.clientY <= 90) {
+        mouseNearTop.current = true;
+        setIsVisible(true);
+        if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
       } else {
-        const sections = siteNavigation.map((item) => item.id);
-        const scrollPosition = window.scrollY + 120;
-        for (let i = sections.length - 1; i >= 0; i--) {
-          const sectionEl = document.getElementById(sections[i]);
-          if (sectionEl && sectionEl.offsetTop <= scrollPosition) {
-            setActiveSection(sections[i]);
-            break;
+        mouseNearTop.current = false;
+        if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+        inactivityTimer.current = setTimeout(() => {
+          if (!mouseNearTop.current && window.scrollY > 50) {
+            setIsVisible(false);
           }
-        }
+        }, 3500);
       }
     };
 
     handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
 
     return () => {
+      if (rAfId !== null) cancelAnimationFrame(rAfId);
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
       window.removeEventListener("hashchange", handleHashChange);
       window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
 
@@ -83,7 +126,15 @@ export function Navbar() {
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (isDesktopHorizontal) {
-      const targetScroll = element.offsetLeft;
+      const track = document.querySelector<HTMLElement>(".horizontal-scroll-track");
+      let targetScroll = element.offsetLeft;
+
+      if (id !== "home" && targetScroll === 0 && track) {
+        const elemRect = element.getBoundingClientRect();
+        const trackRect = track.getBoundingClientRect();
+        targetScroll = Math.max(0, elemRect.left - trackRect.left);
+      }
+
       window.scrollTo({
         top: targetScroll,
         behavior: "smooth",
@@ -100,8 +151,10 @@ export function Navbar() {
       });
     }
 
-    window.history.pushState(null, "", `#${id}`);
-    setActiveSection(id);
+    if (window.location.hash !== `#${id}`) {
+      window.history.pushState(null, "", `#${id}`);
+    }
+    setActiveSection((prev) => (prev === id ? prev : id));
     if (mobileMenuOpen) {
       setMobileMenuOpen(false);
     }
@@ -111,18 +164,22 @@ export function Navbar() {
     <>
       <header
         data-reveal="navbar"
-        className="sticky top-0 z-50 h-[82px] w-full border-b border-[#C7A66B]/12 bg-[#0d0d0d]/92 backdrop-blur-md transition-all duration-300"
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 h-[82px] w-full border-b border-[#C7A66B]/15 bg-[#0d0d0d]/92 backdrop-blur-md transition-transform duration-300 ease-out transform-gpu",
+          isVisible ? "translate-y-0" : "-translate-y-[70px]",
+        )}
       >
-        <div className="container flex h-full items-center justify-between px-6 sm:px-10 lg:px-16">
-          {/* Logo: Shivam. */}
+        <div className="container flex h-[#82px] items-center justify-between px-6 sm:px-10 lg:px-16">
+          {/* Logo: SHK7057. */}
           <Link
             href="#home"
             onClick={(e) => handleNavClick(e, "home")}
-            className="group inline-flex items-center gap-0.5 text-2xl font-serif font-medium tracking-tight text-[#F5F3EF] transition-all duration-300 hover:scale-[1.02] hover:drop-shadow-[0_0_12px_rgba(199,166,107,0.35)]"
-            aria-label="Shivam Portfolio Home"
+            className="group inline-flex items-baseline font-serif text-2xl font-semibold tracking-wide transition-opacity duration-300 hover:opacity-90"
+            aria-label="SHK7057 Portfolio Home"
           >
-            <span>Shivam</span>
-            <span className="font-sans font-bold text-primary">.</span>
+            <span className="text-[#F5F5F5]">SHK</span>
+            <span className="text-primary">7057</span>
+            <span className="font-sans text-primary">.</span>
           </Link>
 
           {/* Desktop & Tablet Primary Navigation */}
@@ -196,15 +253,17 @@ export function Navbar() {
           />
 
           {/* Glass Drawer */}
-          <div className="fixed top-0 bottom-0 right-0 z-50 flex w-[82vw] max-w-sm flex-col justify-between border-l border-[#C7A66B]/20 bg-[#0d0d0d]/96 p-8 shadow-2xl backdrop-blur-xl">
+          <div className="fixed top-0 bottom-0 right-0 z-50 flex w-[82vw] max-w-sm flex-col justify-between border-l border-[#C7A66B]/20 bg-[#0d0d0d]/96 p-8 shadow-2xl backdrop-blur-xl transform-gpu">
             {/* Drawer Top: Logo & Close */}
             <div className="flex items-center justify-between border-b border-border/40 pb-6">
               <Link
                 href="#home"
                 onClick={(e) => handleNavClick(e, "home")}
-                className="font-serif text-2xl font-medium tracking-tight text-[#F5F3EF]"
+                className="inline-flex items-baseline font-serif text-2xl font-semibold tracking-wide transition-opacity duration-300 hover:opacity-90"
               >
-                Shivam<span className="font-sans font-bold text-primary">.</span>
+                <span className="text-[#F5F5F5]">SHK</span>
+                <span className="text-primary">7057</span>
+                <span className="font-sans text-primary">.</span>
               </Link>
 
               <button

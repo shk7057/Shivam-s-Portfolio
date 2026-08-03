@@ -11,7 +11,7 @@ export function GrainOverlay({ className }: GrainOverlayProps) {
     <div
       aria-hidden="true"
       className={cn(
-        "pointer-events-none fixed inset-0 z-[1] select-none opacity-[0.025]",
+        "pointer-events-none fixed inset-0 z-[1] select-none opacity-[0.025] transform-gpu",
         className,
       )}
     >
@@ -20,7 +20,7 @@ export function GrainOverlay({ className }: GrainOverlayProps) {
           <feTurbulence
             type="fractalNoise"
             baseFrequency="0.8"
-            numOctaves="4"
+            numOctaves="2"
             stitchTiles="stitch"
           />
           <feColorMatrix type="saturate" values="0" />

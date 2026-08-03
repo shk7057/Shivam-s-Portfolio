@@ -15,7 +15,7 @@ export function HeroAmbientGlow({ containerRef, className }: HeroAmbientGlowProp
   const targetPos = useRef({ x: 0, y: 0 });
   const currentPos = useRef({ x: 0, y: 0 });
 
-  const targetIntensity = useRef(1); // 1.0 = normal (0.22 core alpha), 1.20 = over portrait (+20% -> 0.264 core alpha)
+  const targetIntensity = useRef(1);
   const currentIntensity = useRef(1);
 
   const animFrameId = useRef<number | null>(null);
@@ -34,12 +34,14 @@ export function HeroAmbientGlow({ containerRef, className }: HeroAmbientGlowProp
       return 350;
     };
 
-    // Center glow initially inside container
     const rect = container.getBoundingClientRect();
     targetPos.current = { x: rect.width / 2, y: rect.height * 0.4 };
     currentPos.current = { x: rect.width / 2, y: rect.height * 0.4 };
 
     let isActive = true;
+    let lastX = -1;
+    let lastY = -1;
+    let lastAlpha = -1;
 
     const render = () => {
       if (!isActive) return;
@@ -47,26 +49,37 @@ export function HeroAmbientGlow({ containerRef, className }: HeroAmbientGlowProp
       const isReducedMotion = reducedMotionQuery.matches;
       const isMobile = !desktopQuery.matches && !tabletQuery.matches;
 
-      // Lerp easing for 60 FPS smooth interpolation
       const ease = 0.07;
-      currentPos.current.x += (targetPos.current.x - currentPos.current.x) * ease;
-      currentPos.current.y += (targetPos.current.y - currentPos.current.y) * ease;
-      currentIntensity.current +=
-        (targetIntensity.current - currentIntensity.current) * ease;
+      const nextX = currentPos.current.x + (targetPos.current.x - currentPos.current.x) * ease;
+      const nextY = currentPos.current.y + (targetPos.current.y - currentPos.current.y) * ease;
+      const nextIntensity =
+        currentIntensity.current + (targetIntensity.current - currentIntensity.current) * ease;
 
-      if (glowRef.current) {
+      currentPos.current.x = nextX;
+      currentPos.current.y = nextY;
+      currentIntensity.current = nextIntensity;
+
+      const dx = Math.abs(nextX - lastX);
+      const dy = Math.abs(nextY - lastY);
+      const di = Math.abs(nextIntensity - lastAlpha);
+
+      // Only mutate DOM background string when position or intensity has meaningfully changed
+      if (glowRef.current && (dx > 0.1 || dy > 0.1 || di > 0.002)) {
+        lastX = nextX;
+        lastY = nextY;
+        lastAlpha = nextIntensity;
+
         const radius = getGlowRadius();
-        const curX = currentPos.current.x.toFixed(1);
-        const curY = currentPos.current.y.toFixed(1);
+        const curX = nextX.toFixed(1);
+        const curY = nextY.toFixed(1);
 
-        const mult = currentIntensity.current;
+        const mult = nextIntensity;
         const coreAlpha = (0.22 * mult).toFixed(3);
         const midAlpha1 = (0.09 * mult).toFixed(3);
         const midAlpha2 = (0.035 * mult).toFixed(3);
         const outerAlpha = (0.01 * mult).toFixed(3);
 
         if (isReducedMotion || isMobile) {
-          // Static warm ambient light for mobile or reduced motion
           glowRef.current.style.background = `radial-gradient(circle ${radius}px at 50% 40%, rgba(199, 166, 107, 0.18) 0%, rgba(199, 166, 107, 0.06) 40%, rgba(199, 166, 107, 0.02) 65%, transparent 85%)`;
         } else {
           glowRef.current.style.background = `radial-gradient(circle ${radius}px at ${curX}px ${curY}px, rgba(199, 166, 107, ${coreAlpha}) 0%, rgba(199, 166, 107, ${midAlpha1}) 32%, rgba(199, 166, 107, ${midAlpha2}) 58%, rgba(199, 166, 107, ${outerAlpha}) 78%, transparent 92%)`;
@@ -82,14 +95,11 @@ export function HeroAmbientGlow({ containerRef, className }: HeroAmbientGlowProp
       if (reducedMotionQuery.matches || !containerRef.current) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
-
-      // Continuous relative coordinates across the Hero section
       const relX = e.clientX - containerRect.left;
       const relY = e.clientY - containerRect.top;
 
       targetPos.current = { x: relX, y: relY };
 
-      // Detect if cursor is over portrait
       const portraitEl = containerRef.current.querySelector<HTMLElement>(
         '[data-reveal="hero-portrait"]',
       );
@@ -102,7 +112,6 @@ export function HeroAmbientGlow({ containerRef, className }: HeroAmbientGlowProp
           e.clientY >= pRect.top &&
           e.clientY <= pRect.bottom;
 
-        // Increase intensity by 20% when over portrait (1.0 -> 1.20)
         targetIntensity.current = isOverPortrait ? 1.2 : 1.0;
       } else {
         targetIntensity.current = 1.0;
@@ -146,7 +155,7 @@ export function HeroAmbientGlow({ containerRef, className }: HeroAmbientGlowProp
       ref={glowRef}
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute inset-0 z-[1] transition-opacity duration-500",
+        "pointer-events-none absolute inset-0 z-[1] transition-opacity duration-500 transform-gpu",
         className,
       )}
     />

@@ -49,7 +49,7 @@ export function HomeSection() {
       ref={sectionRef}
       id="home"
       aria-labelledby="home-heading"
-      className="section-viewport relative overflow-hidden border-b border-border/50 bg-background"
+      className="section-viewport relative overflow-hidden border-b border-border/50 bg-background md:h-screen md:max-h-screen"
     >
       {/* 1. Global Hero Ambient Light */}
       <HeroAmbientGlow containerRef={sectionRef} />
